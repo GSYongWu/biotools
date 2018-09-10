@@ -45,7 +45,7 @@ def bamdrs_run(bamdrspath,
         target=bamdrs_subprocess,
         args=(
             bamdrspath,
-            rmdup_cmd,
+            rmdupbam,
             bed,
             rmdupdir,
             mapQ,
