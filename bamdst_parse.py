@@ -184,4 +184,4 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         print "py bamdrs sortbam rmdupbam bed outdir"
         exit(1)
-    bamdrs_run(sys.argv[1], sys.argv[2], sys.args[3], sys.argv[4], sys.argv[5])
+    bamdrs_run(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
