@@ -1,6 +1,41 @@
 #!/usr/bin/env python
+import os
 
 from pybedtools import BedTool
+
+
+def bamdrs_run(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
+    """[summary]
+    
+    Arguments:
+        bamdrspath {[type]} -- [description]
+        bam {[type]} -- [description]
+        bed {[type]} -- [description]
+        outdir {[type]} -- [description]
+    
+    Keyword Arguments:
+        mapQ {int} -- [description] (default: {20})
+        uncover {int} -- [description] (default: {20})
+    
+    Returns:
+        [type] -- [description]
+    """
+
+    makedir(outdir)
+    cmd = "{bamdrspath} -q {mapQ} --uncover {uncover} -p {bed} -o {outdir} {bam}".format(
+        bamdrspath=bamdrspath,
+        mapQ=mapQ,
+        uncover=uncover,
+        bed=bed,
+        outdir=outdir,
+        bam=bam)
+    return cmd
+
+
+def makedir(*dirs):
+    for path in dirs:
+        if not os.path.exists(path):
+            os.makedirs(path)
 
 
 def slopbed(bedfile, flank, outfile):
@@ -10,15 +45,11 @@ def slopbed(bedfile, flank, outfile):
         bedfile {[string]} -- [raw bed file]
         flank {[int]} -- [extend base pairs in each direction]
         outfile {[string]} -- [extend bed file save as]
-
-    Returns:
-        [string] -- [outfile]
     """
 
     rawbed = BedTool(bedfile)
     addbed = rawbed.slop(b=flank, genome="hg19").sort().merge()
     addbed.saveas(outfile)
-    return outfile
 
 
 def coverage2dict(coverage_report):
