@@ -77,7 +77,7 @@ def bamdrs_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
     """
 
     cmdlis = [
-        bamdrspath, '-q', mapQ, '--uncover', uncover, '-p', bed, '-o', outdir,
+        bamdrspath, '-q', str(mapQ), '--uncover', str(uncover), '-p', bed, '-o', outdir,
         bam
     ]
     subprocess.call(cmdlis)
