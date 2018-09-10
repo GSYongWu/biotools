@@ -6,6 +6,26 @@ import threading
 from pybedtools import BedTool
 
 
+def makedir(*dirs):
+    for path in dirs:
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+
+def slopbed(bedfile, flank, outfile):
+    """Extend bed file.
+    
+    Arguments:
+        bedfile {[string]} -- [raw bed file]
+        flank {[int]} -- [extend base pairs in each direction]
+        outfile {[string]} -- [extend bed file save as]
+    """
+
+    rawbed = BedTool(bedfile)
+    addbed = rawbed.slop(b=flank, genome="hg19").sort().merge()
+    addbed.saveas(outfile)
+
+
 def bamdrs_run(bamdrspath,
                sortbam,
                rmdupbam,
@@ -14,6 +34,21 @@ def bamdrs_run(bamdrspath,
                flank=100,
                mapQ=20,
                uncover=20):
+    """Parallel run bamdrs 3 times(sorted bam raw bed, sorted bam extend bed, rmdup bam raw bed)
+    
+    Arguments:
+        bamdrspath {[string]} -- [path to bamdrs]
+        sortbam {[string]} -- [path to sorted bam]
+        rmdupbam {[string]} -- [path to rndup bam]
+        bed {[string]} -- [path to bed file]
+        outdir {[string]} -- [path to temp dir]
+    
+    Keyword Arguments:
+        flank {int} -- [base pair extend for bed file] (default: {100})
+        mapQ {int} -- [description] (default: {20})
+        uncover {int} -- [description] (default: {20})
+    """
+
     rawdir = outdir + "/raw"
     flankdir = outdir + "/flank"
     rmdupdir = outdir + "/rmdup"
@@ -60,7 +95,7 @@ def bamdrs_run(bamdrspath,
 
 
 def bamdrs_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
-    """Generate bamdrs command list
+    """Run bamdrs command in subprocess 
     
     Arguments:
         bamdrspath {[string]} -- [path to bamdrs]
@@ -69,38 +104,84 @@ def bamdrs_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
         outdir {[string]} -- [path to outdir]
     
     Keyword Arguments:
-        mapQ {int} -- [description] (default: {20})
+        mapQ {int} -- [map qual] (default: {20})
         uncover {int} -- [description] (default: {20})
-    
-    Returns:
-        [list] -- [command line list]
     """
 
     cmdlis = [
-        bamdrspath, '-q', str(mapQ), '--uncover', str(uncover), '-p', bed, '-o', outdir,
-        bam
+        bamdrspath, '-q',
+        str(mapQ), '--uncover',
+        str(uncover), '-p', bed, '-o', outdir, bam
     ]
     subprocess.call(cmdlis)
 
 
-def makedir(*dirs):
-    for path in dirs:
-        if not os.path.exists(path):
-            os.makedirs(path)
-
-
-def slopbed(bedfile, flank, outfile):
-    """Extend bed file.
+def bamdrs_run(bamdrspath,
+               sortbam,
+               rmdupbam,
+               bed,
+               outdir,
+               flank=100,
+               mapQ=20,
+               uncover=20):
+    """Parallel run bamdrs 3 times(sorted bam raw bed, sorted bam extend bed, rmdup bam raw bed)
     
     Arguments:
-        bedfile {[string]} -- [raw bed file]
-        flank {[int]} -- [extend base pairs in each direction]
-        outfile {[string]} -- [extend bed file save as]
+        bamdrspath {[string]} -- [path to bamdrs]
+        sortbam {[string]} -- [path to sorted bam]
+        rmdupbam {[string]} -- [path to rndup bam]
+        bed {[string]} -- [path to bed file]
+        outdir {[string]} -- [path to temp dir]
+    
+    Keyword Arguments:
+        flank {int} -- [base pair extend for bed file] (default: {100})
+        mapQ {int} -- [description] (default: {20})
+        uncover {int} -- [description] (default: {20})
     """
 
-    rawbed = BedTool(bedfile)
-    addbed = rawbed.slop(b=flank, genome="hg19").sort().merge()
-    addbed.saveas(outfile)
+    rawdir = outdir + "/raw"
+    flankdir = outdir + "/flank"
+    rmdupdir = outdir + "/rmdup"
+    flankbed = flankdir + "/flank.bed"
+    makedir(rawdir, flankdir, rmdupdir)
+    slopbed(bed, flank, flankbed)
+
+    threads = []
+    raw_process = threading.Thread(
+        target=bamdrs_subprocess,
+        args=(
+            bamdrspath,
+            sortbam,
+            bed,
+            rawdir,
+            mapQ,
+            uncover,
+        ))
+    flank_process = threading.Thread(
+        target=bamdrs_subprocess,
+        args=(
+            bamdrspath,
+            sortbam,
+            flankbed,
+            flankdir,
+            mapQ,
+            uncover,
+        ))
+    rmdup_process = threading.Thread(
+        target=bamdrs_subprocess,
+        args=(
+            bamdrspath,
+            rmdupbam,
+            bed,
+            rmdupdir,
+            mapQ,
+            uncover,
+        ))
+    threads = [raw_process, flank_process, rmdup_process]
+    for t in threads:
+        t.setDaemon(True)
+        t.start()
+    t.join()
 
 
 def coverage2dict(coverage_report):
@@ -176,6 +257,12 @@ def insert_size(insertsize_plot):
             median_insert = i + 1
             break
     return median_insert
+
+
+def bamdrs_integrate():
+    dic ={}
+    
+    pass
 
 
 if __name__ == '__main__':
