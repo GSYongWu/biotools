@@ -26,74 +26,6 @@ def slopbed(bedfile, flank, outfile):
     addbed.saveas(outfile)
 
 
-def bamdrs_run(bamdrspath,
-               sortbam,
-               rmdupbam,
-               bed,
-               outdir,
-               flank=100,
-               mapQ=20,
-               uncover=20):
-    """Parallel run bamdrs 3 times(sorted bam raw bed, sorted bam extend bed, rmdup bam raw bed)
-    
-    Arguments:
-        bamdrspath {[string]} -- [path to bamdrs]
-        sortbam {[string]} -- [path to sorted bam]
-        rmdupbam {[string]} -- [path to rndup bam]
-        bed {[string]} -- [path to bed file]
-        outdir {[string]} -- [path to temp dir]
-    
-    Keyword Arguments:
-        flank {int} -- [base pair extend for bed file] (default: {100})
-        mapQ {int} -- [description] (default: {20})
-        uncover {int} -- [description] (default: {20})
-    """
-
-    rawdir = outdir + "/raw"
-    flankdir = outdir + "/flank"
-    rmdupdir = outdir + "/rmdup"
-    flankbed = flankdir + "/flank.bed"
-    makedir(rawdir, flankdir, rmdupdir)
-    slopbed(bed, flank, flankbed)
-
-    threads = []
-    raw_process = threading.Thread(
-        target=bamdrs_subprocess,
-        args=(
-            bamdrspath,
-            sortbam,
-            bed,
-            rawdir,
-            mapQ,
-            uncover,
-        ))
-    flank_process = threading.Thread(
-        target=bamdrs_subprocess,
-        args=(
-            bamdrspath,
-            sortbam,
-            flankbed,
-            flankdir,
-            mapQ,
-            uncover,
-        ))
-    rmdup_process = threading.Thread(
-        target=bamdrs_subprocess,
-        args=(
-            bamdrspath,
-            rmdupbam,
-            bed,
-            rmdupdir,
-            mapQ,
-            uncover,
-        ))
-    threads = [raw_process, flank_process, rmdup_process]
-    for t in threads:
-        t.setDaemon(True)
-        t.start()
-    t.join()
-
-
 def bamdrs_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
     """Run bamdrs command in subprocess 
     
@@ -261,7 +193,7 @@ def insert_size(insertsize_plot):
 
 def bamdrs_integrate():
     dic ={}
-    
+
     pass
 
 
