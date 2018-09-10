@@ -18,6 +18,7 @@ def bamdrs_run(bamdrspath,
     flankdir = outdir + "/flank"
     rmdupdir = outdir + "/rmdup"
     flankbed = flankdir + "/flank.bed"
+    makedir(rawdir, flankdir, rmdupdir)
     slopbed(bed, flank, flankbed)
 
     threads = []
@@ -75,7 +76,6 @@ def bamdrs_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
         [list] -- [command line list]
     """
 
-    makedir(outdir)
     cmdlis = [
         bamdrspath, '-q', mapQ, '--uncover', uncover, '-p', bed, '-o', outdir,
         bam
