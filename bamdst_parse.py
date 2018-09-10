@@ -1,35 +1,86 @@
 #!/usr/bin/env python
 import os
+import subprocess
+import threading
 
 from pybedtools import BedTool
 
 
-def bamdrs_run(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
-    """[summary]
+def bamdrs_run(bamdrspath,
+               sortbam,
+               rmdupbam,
+               bed,
+               outdir,
+               flank=100,
+               mapQ=20,
+               uncover=20):
+    rawdir = outdir + "/raw"
+    flankdir = outdir + "/flank"
+    rmdupdir = outdir + "/rmdup"
+    flankbed = flankdir + "/flank.bed"
+    slopbed(bed, flank, flankbed)
+
+    threads = []
+    raw_process = threading.Thread(
+        target=bamdrs_subprocess,
+        args=(
+            bamdrspath,
+            sortbam,
+            bed,
+            rawdir,
+            mapQ,
+            uncover,
+        ))
+    flank_process = threading.Thread(
+        target=bamdrs_subprocess,
+        args=(
+            bamdrspath,
+            sortbam,
+            flankbed,
+            flankdir,
+            mapQ,
+            uncover,
+        ))
+    rmdup_process = threading.Thread(
+        target=bamdrs_subprocess,
+        args=(
+            bamdrspath,
+            rmdup_cmd,
+            bed,
+            rmdupdir,
+            mapQ,
+            uncover,
+        ))
+    threads = [raw_process, flank_process, rmdup_process]
+    for t in threads:
+        t.setDaemon(True)
+        t.start()
+    t.join()
+
+
+def bamdrs_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
+    """Generate bamdrs command list
     
     Arguments:
-        bamdrspath {[type]} -- [description]
-        bam {[type]} -- [description]
-        bed {[type]} -- [description]
-        outdir {[type]} -- [description]
+        bamdrspath {[string]} -- [path to bamdrs]
+        bam {[string]} -- [path to bam file]
+        bed {[string]} -- [path to bed file]
+        outdir {[string]} -- [path to outdir]
     
     Keyword Arguments:
         mapQ {int} -- [description] (default: {20})
         uncover {int} -- [description] (default: {20})
     
     Returns:
-        [type] -- [description]
+        [list] -- [command line list]
     """
 
     makedir(outdir)
-    cmd = "{bamdrspath} -q {mapQ} --uncover {uncover} -p {bed} -o {outdir} {bam}".format(
-        bamdrspath=bamdrspath,
-        mapQ=mapQ,
-        uncover=uncover,
-        bed=bed,
-        outdir=outdir,
-        bam=bam)
-    return cmd
+    cmdlis = [
+        bamdrspath, '-q', mapQ, '--uncover', uncover, '-p', bed, '-o', outdir,
+        bam
+    ]
+    subprocess.call(cmdlis)
 
 
 def makedir(*dirs):
@@ -125,3 +176,12 @@ def insert_size(insertsize_plot):
             median_insert = i + 1
             break
     return median_insert
+
+
+if __name__ == '__main__':
+
+    import sys
+    if len(sys.argv) < 3:
+        print "py bamdrs sortbam rmdupbam bed outdir"
+        exit(1)
+    bamdrs_run(sys.argv[1], sys.argv[2], sys.args[3], sys.argv[4], sys.argv[5])
