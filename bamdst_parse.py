@@ -19,7 +19,7 @@ def str2pctstr(floatstr):
 
 def slopbed(bedfile, flank, outfile):
     """Extend bed file.
-    
+
     Arguments:
         bedfile {[string]} -- [raw bed file]
         flank {[int]} -- [extend base pairs in each direction]
@@ -32,14 +32,14 @@ def slopbed(bedfile, flank, outfile):
 
 
 def bamdst_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
-    """Run bamdrs command in subprocess 
-    
+    """Run bamdrs command in subprocess
+
     Arguments:
         bamdrspath {[string]} -- [path to bamdrs]
         bam {[string]} -- [path to bam file]
         bed {[string]} -- [path to bed file]
         outdir {[string]} -- [path to outdir]
-    
+
     Keyword Arguments:
         mapQ {int} -- [map qual] (default: {20})
         uncover {int} -- [description] (default: {20})
@@ -62,14 +62,14 @@ def bamdst_run(bamdrspath,
                mapQ=20,
                uncover=20):
     """Parallel run bamdrs 3 times(sorted bam raw bed, sorted bam extend bed, rmdup bam raw bed)
-    
+
     Arguments:
         bamdrspath {[string]} -- [path to bamdrs]
         sortbam {[string]} -- [path to sorted bam]
         rmdupbam {[string]} -- [path to rndup bam]
         bed {[string]} -- [path to bed file]
         outdir {[string]} -- [path to temp dir]
-    
+
     Keyword Arguments:
         flank {int} -- [base pair extend for bed file] (default: {100})
         mapQ {int} -- [description] (default: {20})
@@ -116,11 +116,11 @@ def bamdst_run(bamdrspath,
         ))
     threads = [raw_process, flank_process, rmdup_process]
     log = [
-        "Start run sort bam", "Start run sort bam flank bed",
-        "Start run rmdup bam"
+        "Start run sort bam raw bed", "Start run sort bam flank bed",
+        "Start run rmdup bam raw bed"
     ]
     for i in range(len(threads)):
-        #t.setDaemon(True)
+        threads[i].setDaemon(True)
         threads[i].start()
         print ctime(), log[i]
 
@@ -130,10 +130,10 @@ def bamdst_run(bamdrspath,
 
 def coverage2dict(coverage_report):
     """bamdst coverage.report file to dict.
-    
+
     Arguments:
         coverage_report {[string]} -- [bamdst coverage.report file.]
-    
+
     Returns:
         [dict] -- [dict of coverage.report infos]
     """
@@ -151,10 +151,10 @@ def coverage2dict(coverage_report):
 
 def nxcoverage(depth_distribution, *ndepth):
     """Calculate coverage when depth >=N and median depth.
-    
+
     Arguments:
         depth_distribution {string} -- [bamdst output depth_distribution.plot file]
-    
+
     Returns:
         [tuple] -- [median depth and NXdepthCoverage list]
     """
@@ -178,10 +178,10 @@ def nxcoverage(depth_distribution, *ndepth):
 
 def insert_size(insertsize_plot):
     """Calculate median insert size
-    
+
     Arguments:
         insertsize_plot {[string]} -- [bamdst insertsize.plot output file ]
-    
+
     Returns:
         [int] -- [median insert size]
     """
