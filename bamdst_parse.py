@@ -196,7 +196,7 @@ def bamdrs_integrate(sampleid, coverage_sort, depth_distribution_sort,
     dic_sort = coverage2dict(coverage_sort)
     dic_rmdup = coverage2dict(coverage_rmdup)
     dic_flank = coverage2dict(coverage_flank)
-
+    dic["#SAMPLE"] = sampleid
     dic["CLEAN_READS"] = int(
         dic_sort["[Total] Raw Reads (All reads)"]) / 2  #int(read pair)
     dic["CLEAN_BASES"] = dic_sort["[Total] Raw Data(Mb)"]  #MB, string
