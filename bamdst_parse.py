@@ -210,7 +210,7 @@ def bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
                      insertsize_sort, coverage_rmdup, depth_distribution_rmdup,
                      coverage_flank):
     """Integrate bamdst output(sort bam raw bed / sort bam flank bed / rmdup bam raw bed)
-    
+
     Arguments:
         sampleid {[string]} -- [sample id]
         coverage_sort {[string]} -- [path to sort coverage.report]
@@ -219,7 +219,7 @@ def bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
         coverage_rmdup {[string]} -- [path to rmdup coverage.report]
         depth_distribution_rmdup {[string]} -- [path to rmdup depth_distribution.plot]
         coverage_flank {[string]} -- [path to flank coverage.report]
-    
+
     Returns:
         [dict] -- [sample infos]
     """
@@ -335,6 +335,9 @@ def run(bamdstpath,
                            insertsize_sort, coverage_rmdup,
                            depth_distribution_rmdup, coverage_flank)
     head = headerlis()
+    if sep == 't':
+        sep = '\t'
+
     if not noheader:
         print sep.join(head)
     lis = []
