@@ -2,6 +2,7 @@
 import os
 import subprocess
 import threading
+import argparse
 from time import ctime
 
 from pybedtools import BedTool
@@ -31,11 +32,11 @@ def slopbed(bedfile, flank, outfile):
     addbed.saveas(outfile)
 
 
-def bamdst_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
-    """Run bamdrs command in subprocess
+def bamdst_subprocess(bamdstpath, bam, bed, outdir, mapQ=20, uncover=20):
+    """Run bamdst command in subprocess
 
     Arguments:
-        bamdrspath {[string]} -- [path to bamdrs]
+        bamdstpath {[string]} -- [path to bamdst]
         bam {[string]} -- [path to bam file]
         bed {[string]} -- [path to bed file]
         outdir {[string]} -- [path to outdir]
@@ -46,14 +47,14 @@ def bamdst_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
     """
 
     cmdlis = [
-        bamdrspath, '-q',
+        bamdstpath, '-q',
         str(mapQ), '--uncover',
         str(uncover), '-p', bed, '-o', outdir, bam
     ]
     subprocess.call(cmdlis)
 
 
-def bamdst_run(bamdrspath,
+def bamdst_run(bamdstpath,
                sortbam,
                rmdupbam,
                bed,
@@ -61,10 +62,10 @@ def bamdst_run(bamdrspath,
                flank=100,
                mapQ=20,
                uncover=20):
-    """Parallel run bamdrs 3 times(sorted bam raw bed, sorted bam extend bed, rmdup bam raw bed)
+    """Parallel run bamdst 3 times(sorted bam raw bed, sorted bam extend bed, rmdup bam raw bed)
 
     Arguments:
-        bamdrspath {[string]} -- [path to bamdrs]
+        bamdstpath {[string]} -- [path to bamdst]
         sortbam {[string]} -- [path to sorted bam]
         rmdupbam {[string]} -- [path to rndup bam]
         bed {[string]} -- [path to bed file]
@@ -87,7 +88,7 @@ def bamdst_run(bamdrspath,
     raw_process = threading.Thread(
         target=bamdst_subprocess,
         args=(
-            bamdrspath,
+            bamdstpath,
             sortbam,
             bed,
             rawdir,
@@ -97,7 +98,7 @@ def bamdst_run(bamdrspath,
     flank_process = threading.Thread(
         target=bamdst_subprocess,
         args=(
-            bamdrspath,
+            bamdstpath,
             sortbam,
             flankbed,
             flankdir,
@@ -107,7 +108,7 @@ def bamdst_run(bamdrspath,
     rmdup_process = threading.Thread(
         target=bamdst_subprocess,
         args=(
-            bamdrspath,
+            bamdstpath,
             rmdupbam,
             bed,
             rmdupdir,
@@ -115,17 +116,22 @@ def bamdst_run(bamdrspath,
             uncover,
         ))
     threads = [raw_process, flank_process, rmdup_process]
-    log = [
-        "Start run sort bam raw bed", "Start run sort bam flank bed",
-        "Start run rmdup bam raw bed"
+    startlog = [
+        "Sort bam raw bed bamdst Start", "Sort bam flank bed Start",
+        "Rmdup bam raw bed Start"
+    ]
+    finishlog = [
+        "Sort bam raw bed Finished", "Sort bam flank bed Finished",
+        "Rmdup bam raw bed Finished"
     ]
     for i in range(len(threads)):
         threads[i].setDaemon(True)
         threads[i].start()
-        print ctime(), log[i]
+        print ctime(), startlog[i]
 
-    for t in threads:
-        t.join()
+    for i in range(len(threads)):
+        threads[i].join()
+        print ctime(), finishlog[i]
 
 
 def coverage2dict(coverage_report):
@@ -266,10 +272,10 @@ def bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
     return dic
 
 
-#[bamdrs_run and bamdrs_integrate test]
+#[bamdst_run and bamdst_integrate test]
 
 
-def header():
+def headerlis():
     return [
         "#SAMPLE", "CLEAN_READS", "CLEAN_BASES", "INSERT_SIZE", "MAPQ20(%)",
         "DUPLICATE(%)", "DUPLICATE_TARGET(%)", "ON_TARGET_CORE(%)",
@@ -286,31 +292,82 @@ def header():
     ]
 
 
-def main():
-    sortbam = "/GPFS04/GSPipeline4/20180901_E00516_0382_AHLK35CCXY/HQData/Sample_B180621127568-KY400-2/B180621127568-KY400-2.sorted.bam"
-    rmdupbam = "/GPFS04/GSPipeline4/20180901_E00516_0382_AHLK35CCXY/HQData/Sample_B180621127568-KY400-2/B180621127568-KY400-2.sorted.rmdup.bam"
-    bamdst = "/GPFS01/softwares/bamdst/bamdst"
-    bedfile = "/GPFS01/databases/GSCAP/db_for_201801_425/Selected_201801-425.raw.bed"
+def run(bamdstpath,
+        sortbam,
+        rmdupbam,
+        bed,
+        outdir,
+        flank=100,
+        mapQ=20,
+        uncover=20,
+        header=True,
+        sep=","):
+    sampleid = sortbam.split("/")[-1].split(".")[0]
+    bamdst_run(
+        bamdstpath,
+        sortbam,
+        rmdupbam,
+        bed,
+        outdir,
+        flank=flank,
+        mapQ=mapQ,
+        uncover=uncover)
 
-    sampleid = "B180621127568-KY400-2"
-    coverage_sort = "sort/coverage.report"
-    depth_distribution_sort = "sort/depth_distribution.plot"
-    insertsize_sort = "sort/insertsize.plot"
-    coverage_rmdup = "rmdup/coverage.report"
-    depth_distribution_rmdup = "rmdup/depth_distribution.plot"
-    coverage_flank = "flank/coverage.report"
-
-    bamdst_run(bamdst, sortbam, rmdupbam, bedfile, "./")
+    coverage_sort = outdir + "/sort/coverage.report"
+    depth_distribution_sort = outdir + "/sort/depth_distribution.plot"
+    insertsize_sort = outdir + "/sort/insertsize.plot"
+    coverage_rmdup = outdir + "/rmdup/coverage.report"
+    depth_distribution_rmdup = outdir + "/rmdup/depth_distribution.plot"
+    coverage_flank = outdir + "/flank/coverage.report"
     dic = bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
                            insertsize_sort, coverage_rmdup,
                            depth_distribution_rmdup, coverage_flank)
-    head = header()
-    print ",".join(head)
+    head = headerlis()
+    if header:
+        print sep.join(head)
     lis = []
     for h in head:
         lis.append(dic[h])
-    print ','.join(map(str, lis))
+    print sep.join(map(str, lis))
+
+
+def parseargs():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-s", "--sortedbam", help="sorted bam file", required=True)
+    parser.add_argument(
+        "-r", "--rmdupbam", help="rmdup bam file", required=True)
+    parser.add_argument("-b", "--bed", help="target bed file", required=True)
+    parser.add_argument(
+        "-d",
+        "--bamdst",
+        help="path to bamdst software",
+        default="/GPFS01/softwares/bamdst/bamdst")
+    parser.add_argument(
+        "-o", "--tempdir", help="path to bamdst output dir", default="./")
+    parser.add_argument(
+        "-f", "--flank", help="base pairs in each direction", default=100)
+    parser.add_argument(
+        "-m",
+        "--mapq",
+        help=
+        "map quality cutoff value, greater or equal to the value will be count",
+        default=20)
+    parser.add_argument(
+        "-u",
+        "--uncover",
+        help="region will included in uncover file if below it",
+        default=20)
+    parser.add_argument(
+        "-h", "--header", action="store_false", help="print header or not", default=True)
+    parser.add_argument("-p", "--sep", help="delimiter ", default=",")
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
-    main()
+    import sys
+    if len(sys.argv) == 1:
+        sys.argv.append("-h")
+    args = parseargs()
+    run(args.bamdst, args.sortedbam, args.rmdupbam, args.bed, args.tempdir,
+        args.flank, args.mapq, args.uncover, args.header, args.sep)
