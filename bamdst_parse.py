@@ -261,18 +261,15 @@ def bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
     dic["TARGET_READS_DEDUP"] = dic_rmdup["[Target] Target Reads"]
 
     dic["DUPLICATE(%)"] = str2pctstr(
-        float(dic["MAPPED_READS_DEDUP"]) / float(dic["MAPPED_READS"]))
+        1 - float(dic["MAPPED_READS_DEDUP"]) / float(dic["MAPPED_READS"]))
     dic["DUPLICATE_TARGET(%)"] = str2pctstr(
-        float(dic["TARGET_READS_DEDUP"]) / float(dic["TARGET_READS"]))
+        1 - float(dic["TARGET_READS_DEDUP"]) / float(dic["TARGET_READS"]))
 
     dic["ON_TARGET_EXT(%)"] = dic_flank[
         "[Target] Fraction of Target Data in all data"]
     dic["ON_TARGET_READS_EXT(%)"] = dic_flank[
         "[Target] Fraction of Target Reads in all reads"]
     return dic
-
-
-#[bamdst_run and bamdst_integrate test]
 
 
 def headerlis():
@@ -302,7 +299,7 @@ def run(bamdstpath,
         uncover=20,
         noheader=False,
         sep=","):
-    sampleid = sortbam.split("/")[-1].split(".")[0]
+
     bamdst_run(
         bamdstpath,
         sortbam,
@@ -313,6 +310,7 @@ def run(bamdstpath,
         mapQ=mapQ,
         uncover=uncover)
 
+    sampleid = sortbam.split("/")[-1].split(".")[0]
     coverage_sort = outdir + "/sort/coverage.report"
     depth_distribution_sort = outdir + "/sort/depth_distribution.plot"
     insertsize_sort = outdir + "/sort/insertsize.plot"
@@ -344,9 +342,15 @@ def parseargs():
         help="path to bamdst software. default:/GPFS01/softwares/bamdst/bamdst",
         default="/GPFS01/softwares/bamdst/bamdst")
     parser.add_argument(
-        "-o", "--tempdir", help="path to bamdst output dir. default=./", default="./")
+        "-o",
+        "--tempdir",
+        help="path to bamdst output dir. default=./",
+        default="./")
     parser.add_argument(
-            "-f", "--flank", help="base pairs in each direction. default:100", default=100)
+        "-f",
+        "--flank",
+        help="base pairs in each direction. default:100",
+        default=100)
     parser.add_argument(
         "-m",
         "--mapq",
@@ -359,8 +363,12 @@ def parseargs():
         help="region will included in uncover file if below it. default:20",
         default=20)
     parser.add_argument(
-            "-n", "--noheader", action="store_true", help="print header or not, default:with header")
-    parser.add_argument("-p", "--sep", help="delimiter, default:,", default=",")
+        "-n",
+        "--noheader",
+        action="store_true",
+        help="print header or not, default:with header")
+    parser.add_argument(
+        "-p", "--sep", help="delimiter, default:,", default=",")
     return parser.parse_args()
 
 
