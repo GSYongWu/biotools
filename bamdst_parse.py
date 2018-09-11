@@ -201,7 +201,7 @@ def bamdrs_integrate(sampleid, coverage_sort, depth_distribution_sort,
         dic_sort["[Total] Raw Reads (All reads)"]) / 2  #int(read pair)
     dic["CLEAN_BASES"] = dic_sort["[Total] Raw Data(Mb)"]  #MB, string
     dic["MAPQ20_READS"] = dic_sort["[Total] MapQuality above cutoff reads"]
-    dic["MQPQ20(%)"] = dic_sort[
+    dic["MAPQ20(%)"] = dic_sort[
         "[Total] Fraction of MapQ reads in mapped reads"]
     dic["TARGET_READS"] = dic_sort["[Target] Target Reads"]
     dic["MAPPED_READS"] = dic_sort["[Total] Mapped Reads"]
