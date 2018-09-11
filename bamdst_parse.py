@@ -11,6 +11,9 @@ def makedir(*dirs):
         if not os.path.exists(path):
             os.makedirs(path)
 
+def str2pctstr(floatstr):
+    return str(round(float(floatstr)*100, 2))+"%"
+
 
 def slopbed(bedfile, flank, outfile):
     """Extend bed file.
@@ -156,7 +159,7 @@ def nxcoverage(depth_distribution, *ndepth):
             depth, base, freq, rest_base, sumfreq = i.split("\t")
             coverage_lis.append(float(sumfreq))
     for nd in ndepth:
-        coverage.append(coverage_lis[nd - 1])
+        coverage.append(str2pctstr(coverage_lis[nd - 1]))
     for i in range(len(coverage_lis) + 1):
         if coverage_lis[i] > 0.5 and coverage_lis[i + 1] <= 0.5:
             median_depth = i + 1
@@ -242,12 +245,12 @@ def bamdrs_integrate(sampleid, coverage_sort, depth_distribution_sort,
     dic["MAPPED_READS_DEDUP"] = dic_rmdup["[Total] Mapped Reads"]
     dic["TARGET_READS_DEDUP"] = dic_rmdup["[Target] Target Reads"]
 
-    dic["DUPLICATE(%)"] = str(
-        float(dic["MAPPED_READS_DEDUP"]) * 100 / float(
-            dic["MAPPED_READS"])) + "%"
-    dic["DUPLICATE_TARGET(%)"] = str(
-        float(dic["TARGET_READS_DEDUP"]) * 100 / float(
-            dic["TARGET_READS"])) + "%"
+    dic["DUPLICATE(%)"] = str2pctstr(
+        float(dic["MAPPED_READS_DEDUP"]) / float(
+            dic["MAPPED_READS"]))
+    dic["DUPLICATE_TARGET(%)"] = str2pctstr(
+        float(dic["TARGET_READS_DEDUP"]) / float(
+            dic["TARGET_READS"]))
 
     dic["ON_TARGET_EXT(%)"] = dic_flank[
         "[Target] Fraction of Target Data in all data"]
