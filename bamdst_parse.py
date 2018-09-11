@@ -115,9 +115,10 @@ def bamdst_run(bamdrspath,
         ))
     threads = [raw_process, flank_process, rmdup_process]
     for t in threads:
-        t.setDaemon(True)
+        #t.setDaemon(True)
         t.start()
-    t.join()
+    for t in threads:
+        t.join()
 
 
 def coverage2dict(coverage_report):
