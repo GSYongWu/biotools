@@ -11,8 +11,9 @@ def makedir(*dirs):
         if not os.path.exists(path):
             os.makedirs(path)
 
+
 def str2pctstr(floatstr):
-    return str(round(float(floatstr)*100, 2))+"%"
+    return str(round(float(floatstr) * 100, 2)) + "%"
 
 
 def slopbed(bedfile, flank, outfile):
@@ -29,7 +30,7 @@ def slopbed(bedfile, flank, outfile):
     addbed.saveas(outfile)
 
 
-def bamdrs_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
+def bamdst_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
     """Run bamdrs command in subprocess 
     
     Arguments:
@@ -51,7 +52,7 @@ def bamdrs_subprocess(bamdrspath, bam, bed, outdir, mapQ=20, uncover=20):
     subprocess.call(cmdlis)
 
 
-def bamdrs_run(bamdrspath,
+def bamdst_run(bamdrspath,
                sortbam,
                rmdupbam,
                bed,
@@ -83,7 +84,7 @@ def bamdrs_run(bamdrspath,
 
     threads = []
     raw_process = threading.Thread(
-        target=bamdrs_subprocess,
+        target=bamdst_subprocess,
         args=(
             bamdrspath,
             sortbam,
@@ -93,7 +94,7 @@ def bamdrs_run(bamdrspath,
             uncover,
         ))
     flank_process = threading.Thread(
-        target=bamdrs_subprocess,
+        target=bamdst_subprocess,
         args=(
             bamdrspath,
             sortbam,
@@ -103,7 +104,7 @@ def bamdrs_run(bamdrspath,
             uncover,
         ))
     rmdup_process = threading.Thread(
-        target=bamdrs_subprocess,
+        target=bamdst_subprocess,
         args=(
             bamdrspath,
             rmdupbam,
@@ -191,7 +192,7 @@ def insert_size(insertsize_plot):
     return median_insert
 
 
-def bamdrs_integrate(sampleid, coverage_sort, depth_distribution_sort,
+def bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
                      insertsize_sort, coverage_rmdup, depth_distribution_rmdup,
                      coverage_flank):
 
@@ -246,17 +247,18 @@ def bamdrs_integrate(sampleid, coverage_sort, depth_distribution_sort,
     dic["TARGET_READS_DEDUP"] = dic_rmdup["[Target] Target Reads"]
 
     dic["DUPLICATE(%)"] = str2pctstr(
-        float(dic["MAPPED_READS_DEDUP"]) / float(
-            dic["MAPPED_READS"]))
+        float(dic["MAPPED_READS_DEDUP"]) / float(dic["MAPPED_READS"]))
     dic["DUPLICATE_TARGET(%)"] = str2pctstr(
-        float(dic["TARGET_READS_DEDUP"]) / float(
-            dic["TARGET_READS"]))
+        float(dic["TARGET_READS_DEDUP"]) / float(dic["TARGET_READS"]))
 
     dic["ON_TARGET_EXT(%)"] = dic_flank[
         "[Target] Fraction of Target Data in all data"]
     dic["ON_TARGET_READS_EXT(%)"] = dic_flank[
         "[Target] Fraction of Target Reads in all reads"]
     return dic
+
+
+#[bamdrs_run and bamdrs_integrate test]
 
 
 def header():
@@ -277,6 +279,11 @@ def header():
 
 
 def main():
+    sortbam = "/GPFS04/GSPipeline4/20180901_E00516_0382_AHLK35CCXY/HQData/Sample_B180621127568-KY400-2/B180621127568-KY400-2.sorted.bam"
+    rmdupbam = "/GPFS04/GSPipeline4/20180901_E00516_0382_AHLK35CCXY/HQData/Sample_B180621127568-KY400-2/B180621127568-KY400-2.sorted.rmdup.bam"
+    bamdst = "/GPFS01/softwares/bamdst/bamdst"
+    bedfile = "/GPFS01/databases/GSCAP/db_for_201801_425/Selected_201801-425.raw.bed"
+
     sampleid = "B180621127568-KY400-2"
     coverage_sort = "sort/coverage.report"
     depth_distribution_sort = "sort/depth_distribution.plot"
@@ -284,7 +291,9 @@ def main():
     coverage_rmdup = "rmdup/coverage.report"
     depth_distribution_rmdup = "rmdup/depth_distribution.plot"
     coverage_flank = "flank/coverage.report"
-    dic = bamdrs_integrate(sampleid, coverage_sort, depth_distribution_sort,
+
+    bamdst_run(bamdst, sortbam, rmdupbam, bedfile, "./")
+    dic = bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
                            insertsize_sort, coverage_rmdup,
                            depth_distribution_rmdup, coverage_flank)
     head = header()
