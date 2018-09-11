@@ -115,14 +115,14 @@ def bamdst_run(bamdstpath,
             mapQ,
             uncover,
         ))
-    threads = [raw_process, flank_process, rmdup_process]
+    threads = [rmdup_process, raw_process, flank_process]
     startlog = [
-        "Sort bam raw bed bamdst Start", "Sort bam flank bed Start",
-        "Rmdup bam raw bed Start"
+        "Rmdup bam raw bed Start", "Sort bam raw bed bamdst Start",
+        "Sort bam flank bed Start"
     ]
     finishlog = [
-        "Sort bam raw bed Finished", "Sort bam flank bed Finished",
-        "Rmdup bam raw bed Finished"
+        "Rmdup bam raw bed Finished", "Sort bam raw bed Finished",
+        "Sort bam flank bed Finished"
     ]
     for i in range(len(threads)):
         threads[i].setDaemon(True)
@@ -209,6 +209,20 @@ def insert_size(insertsize_plot):
 def bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
                      insertsize_sort, coverage_rmdup, depth_distribution_rmdup,
                      coverage_flank):
+    """Integrate bamdst output(sort bam raw bed / sort bam flank bed / rmdup bam raw bed)
+    
+    Arguments:
+        sampleid {[string]} -- [sample id]
+        coverage_sort {[string]} -- [path to sort coverage.report]
+        depth_distribution_sort {[string]} -- [path to sort depth_distribution.plot]
+        insertsize_sort {[string]} -- [path to sort insertsize.plot]
+        coverage_rmdup {[string]} -- [path to rmdup coverage.report]
+        depth_distribution_rmdup {[string]} -- [path to rmdup depth_distribution.plot]
+        coverage_flank {[string]} -- [path to flank coverage.report]
+    
+    Returns:
+        [dict] -- [sample infos]
+    """
 
     dic = {}
     dic_sort = coverage2dict(coverage_sort)
