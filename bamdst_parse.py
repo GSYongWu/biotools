@@ -2,6 +2,7 @@
 import os
 import subprocess
 import threading
+from time import ctime
 
 from pybedtools import BedTool
 
@@ -114,9 +115,15 @@ def bamdst_run(bamdrspath,
             uncover,
         ))
     threads = [raw_process, flank_process, rmdup_process]
-    for t in threads:
+    log = [
+        "Start run sort bam", "Start run sort bam flank bed",
+        "Start run rmdup bam"
+    ]
+    for i in range(len(threads)):
         #t.setDaemon(True)
-        t.start()
+        threads[i].start()
+        print ctime(), log[i]
+
     for t in threads:
         t.join()
 
