@@ -300,7 +300,7 @@ def run(bamdstpath,
         flank=100,
         mapQ=20,
         uncover=20,
-        header=True,
+        noheader=False,
         sep=","):
     sampleid = sortbam.split("/")[-1].split(".")[0]
     bamdst_run(
@@ -323,7 +323,7 @@ def run(bamdstpath,
                            insertsize_sort, coverage_rmdup,
                            depth_distribution_rmdup, coverage_flank)
     head = headerlis()
-    if header:
+    if not noheader:
         print sep.join(head)
     lis = []
     for h in head:
@@ -341,26 +341,26 @@ def parseargs():
     parser.add_argument(
         "-d",
         "--bamdst",
-        help="path to bamdst software",
+        help="path to bamdst software. default:/GPFS01/softwares/bamdst/bamdst",
         default="/GPFS01/softwares/bamdst/bamdst")
     parser.add_argument(
-        "-o", "--tempdir", help="path to bamdst output dir", default="./")
+        "-o", "--tempdir", help="path to bamdst output dir. default=./", default="./")
     parser.add_argument(
-        "-f", "--flank", help="base pairs in each direction", default=100)
+            "-f", "--flank", help="base pairs in each direction. default:100", default=100)
     parser.add_argument(
         "-m",
         "--mapq",
         help=
-        "map quality cutoff value, greater or equal to the value will be count",
+        "map quality cutoff value, greater or equal to the value will be count. default:20",
         default=20)
     parser.add_argument(
         "-u",
         "--uncover",
-        help="region will included in uncover file if below it",
+        help="region will included in uncover file if below it. default:20",
         default=20)
     parser.add_argument(
-        "-h", "--header", action="store_false", help="print header or not", default=True)
-    parser.add_argument("-p", "--sep", help="delimiter ", default=",")
+            "-n", "--noheader", action="store_true", help="print header or not, default:with header")
+    parser.add_argument("-p", "--sep", help="delimiter, default:,", default=",")
     return parser.parse_args()
 
 
@@ -370,4 +370,4 @@ if __name__ == '__main__':
         sys.argv.append("-h")
     args = parseargs()
     run(args.bamdst, args.sortedbam, args.rmdupbam, args.bed, args.tempdir,
-        args.flank, args.mapq, args.uncover, args.header, args.sep)
+        args.flank, args.mapq, args.uncover, args.noheader, args.sep)
