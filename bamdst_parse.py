@@ -167,7 +167,7 @@ def calCV(region_tsv_gz, stat="mean"):
         iqr_median_cv = 999
     else:
         iqr_median_cv = iqr * 1.0 / median_depth
-    return iqr_median_cv
+    return round(iqr_median_cv, 2)
 
 
 def bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
@@ -407,13 +407,17 @@ def headerlis():
 def write_infos(dic, output=sys.stdout, noheader=False, sep=","):
     if sep == 't':
         sep = '\t'
-    with open(output, "w") as w:
-        if not noheader:
-            w.write(sep.join(headerlis()) + "\n")
-        lis = []
-        for h in headerlis():
-            lis.append(dic[h])
-        w.write(sep.join(map(str, lis)) + "\n")
+    if output == sys.stdout:
+        w = sys.stdout
+    else:
+        w = open(output, "w")
+
+    if not noheader:
+        w.write(sep.join(headerlis()) + "\n")
+    lis = []
+    for h in headerlis():
+        lis.append(dic[h])
+    w.write(sep.join(map(str, lis)) + "\n")
 
 
 def main():

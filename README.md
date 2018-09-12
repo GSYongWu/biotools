@@ -11,8 +11,8 @@ parse bamdst output file.
 ```shell
 $ ./bamdst_parse.py
 usage: bamdst_parse.py [-h] -s SORTEDBAM -r RMDUPBAM -b BED [-d BAMDST]
-                       [-o TEMPDIR] [-f FLANK] [-m MAPQ] [-u UNCOVER] [-n]
-                       [-p SEP]
+                       [-t TEMPDIR] [-o OUTPUT] [-f FLANK] [-m MAPQ]
+                       [-u UNCOVER] [-n] [-p SEP]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -22,19 +22,21 @@ optional arguments:
                         rmdup bam file
   -b BED, --bed BED     target bed file
   -d BAMDST, --bamdst BAMDST
-                        path to bamdst software.
-                        default:/GPFS01/softwares/bamdst/bamdst
-  -o TEMPDIR, --tempdir TEMPDIR
-                        path to bamdst output dir. default=./
+                        path to bamdst software
+                        [/GPFS01/softwares/bamdst/bamdst]
+  -t TEMPDIR, --tempdir TEMPDIR
+                        path to bamdst output dir [./]
+  -o OUTPUT, --output OUTPUT
+                        output file name [stdout]
   -f FLANK, --flank FLANK
-                        base pairs in each direction. default:100
+                        base pairs in each direction [100]
   -m MAPQ, --mapq MAPQ  map quality cutoff value, greater or equal to the
-                        value will be count. default:20
+                        value will be count [20]
   -u UNCOVER, --uncover UNCOVER
-                        region will included in uncover file if below it.
-                        default:20
-  -n, --noheader        print header or not, default:with header
+                        region will included in uncover file if below it [20]
+  -n, --noheader        print no header [False]
   -p SEP, --sep SEP     delimiter, default:,
+
 ```
 
 ### Example
@@ -83,3 +85,4 @@ optional arguments:
 | 10%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*10% |
 | 20%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*20% |
 | 50%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*50% |
+| CV_SCORE                  | cv score                                |
