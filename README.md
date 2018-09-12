@@ -9,7 +9,7 @@ parse bamdst output file.
 ### Usage
 
 ```shell
-$ ./bamdst_parse.py 
+$ ./bamdst_parse.py
 usage: bamdst_parse.py [-h] -s SORTEDBAM -r RMDUPBAM -b BED [-d BAMDST]
                        [-o TEMPDIR] [-f FLANK] [-m MAPQ] [-u UNCOVER] [-n]
                        [-p SEP]
