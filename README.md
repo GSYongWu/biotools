@@ -8,7 +8,7 @@ parse bamdst output file.
 
 ### Usage
 
-```bash
+```shell
 $ ./bamdst_parse.py 
 usage: bamdst_parse.py [-h] -s SORTEDBAM -r RMDUPBAM -b BED [-d BAMDST]
                        [-o TEMPDIR] [-f FLANK] [-m MAPQ] [-u UNCOVER] [-n]
@@ -46,3 +46,40 @@ optional arguments:
 ```
 
 ### Output
+
+| Title                     | Description                             |
+| ------------------------- | --------------------------------------- |
+| #SAMPLE                   | Sample name                             |
+| CLEAN_READS               | Clean reads count                       |
+| CLEAN_BASES               | Clean base count(MB)                    |
+| INSERT_SIZE               | Insert size                             |
+| MAPQ20(%)                 | MapQ>=20 reads pct                      |
+| DUPLICATE(%)              | Duplicate pct                           |
+| DUPLICATE_TARGET(%)       | duplicate(target region)                |
+| ON_TARGET_CORE(%)         | Ontarget in core region(base)           |
+| ON_TARGET_EXT(%)          | Ontarget in extend 100bp region(base)   |
+| ON_TARGET_READS_CORE(%)   | Ontarget reads pct                      |
+| ON_TARGET_READS_EXT(%)    | Ontarget reads flank 100bp pct          |
+| RATIO_OF_MAPPED(%)        | Ratio of mapped reads                   |
+| MEAN_DEPTH                | Mean depth                              |
+| MEDIAN_DEPTH              | Median depth                            |
+| 1X_COVERAGE(%)            | Coverage >=1X                           |
+| 20X_COVERAGE(%)           | Coverage >=20X                          |
+| 50X_COVERAGE(%)           | Coverage >=50X                          |
+| 100X_COVERAGE(%)          | Coverage >=100X                         |
+| 200X_COVERAGE(%)          | Coverage >=200X                         |
+| 500X_COVERAGE(%)          | Coverage >=500X                         |
+| 10%_COVERAGE(%)           | Coverage >=(Mean depth)*10%             |
+| 20%_COVERAGE(%)           | Coverage >=(Mean depth)*20%             |
+| 50%_COVERAGE(%)           | Coverage >=(Mean depth)*50%             |
+| MEAN_DEPTH_DEDUP          | Mean dedup depth                        |
+| MEDIAN_DEPTH_DEDUP        | Median dedup depth                      |
+| 1X_COVERAGE_DEDUP(%)      | Dedup coverage >=1X                     |
+| 20X_COVERAGE_DEDUP(%)     | Dedup coverage >=20X                    |
+| 50X_COVERAGE_DEDUP(%)     | Dedup coverage >=50X                    |
+| 100X_COVERAGE_DEDUP(%)    | Dedup coverage >=100X                   |
+| 200X_COVERAGE_DEDUP(%)    | Dedup coverage >=200X                   |
+| 500X_COVERAGE_DEDUP(%)    | Dedup coverage >=500X                   |
+| 10%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*10% |
+| 20%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*20% |
+| 50%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*50% |
