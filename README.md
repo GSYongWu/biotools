@@ -1,6 +1,6 @@
 # biotools
 
-some small scripts or tools for bioinfomatics
+Some small scripts or tools for bioinfomatics
 
 ## bamdst_parse
 
@@ -41,10 +41,24 @@ optional arguments:
 
 ### Example
 
+#### As a script
+
 ```bash
 ./bamdst_parse.py -s test.sorted.bam -r test.sorted.rmdup.bam -b target.bed > output.csv
 
 ./bamdst_parse.py -s test.sorted.bam -r test.sorted.rmdup.bam -b target.bed -p \t > output.tsv
+
+./bamdst_parse.py -s test.sorted.bam -r test.sorted.rmdup.bam -b target.bed -o output.csv
+```
+
+#### As a module
+
+bamdst_run return an infos dict.
+
+```python
+import bamdst_parse
+dic = bamdst_parse.bamdst_run("path/to/bamdst", "path/to/sorted.bam",
+                             "path/to/rmdup.bam", "path/to/bedfile")
 ```
 
 ### Output
@@ -85,4 +99,4 @@ optional arguments:
 | 10%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*10% |
 | 20%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*20% |
 | 50%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*50% |
-| CV_SCORE                  | cv score                                |
+| CV_SCORE                  | CV score of iqr median region depth     |

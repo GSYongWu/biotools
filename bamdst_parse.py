@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-import os
-import sys
-import subprocess
-import threading
 import argparse
 import gzip
-import numpy
+import os
+import subprocess
+import sys
+import threading
 from time import ctime
+
+import numpy
 
 from pybedtools import BedTool
 
@@ -249,13 +250,13 @@ def bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
         "[Target] Fraction of Target Reads in all reads"]
     dic["CV_SCORE"] = calCV(region_sort, stat="mean")
     return dic
-
+bamdst_run()
 
 def bamdst_run(bamdstpath,
                sortbam,
                rmdupbam,
                bed,
-               outdir,
+               outdir="./",
                flank=100,
                mapQ=20,
                uncover=20):
