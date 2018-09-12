@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 import os
+import sys
 import subprocess
 import threading
 import argparse
+import gzip
+import numpy
 from time import ctime
 
 from pybedtools import BedTool
@@ -22,9 +25,9 @@ def slopbed(bedfile, flank, outfile):
     """Extend bed file.
 
     Arguments:
-        bedfile {[string]} -- [raw bed file]
+        bedfile {[str]} -- [raw bed file]
         flank {[int]} -- [extend base pairs in each direction]
-        outfile {[string]} -- [extend bed file save as]
+        outfile {[str]} -- [extend bed file save as]
     """
 
     rawbed = BedTool(bedfile)
@@ -36,10 +39,10 @@ def bamdst_subprocess(bamdstpath, bam, bed, outdir, mapQ=20, uncover=20):
     """Run bamdst command in subprocess
 
     Arguments:
-        bamdstpath {[string]} -- [path to bamdst]
-        bam {[string]} -- [path to bam file]
-        bed {[string]} -- [path to bed file]
-        outdir {[string]} -- [path to outdir]
+        bamdstpath {[str]} -- [path to bamdst]
+        bam {[str]} -- [path to bam file]
+        bed {[str]} -- [path to bed file]
+        outdir {[str]} -- [path to outdir]
 
     Keyword Arguments:
         mapQ {int} -- [map qual] (default: {20})
@@ -54,91 +57,11 @@ def bamdst_subprocess(bamdstpath, bam, bed, outdir, mapQ=20, uncover=20):
     subprocess.call(cmdlis)
 
 
-def bamdst_run(bamdstpath,
-               sortbam,
-               rmdupbam,
-               bed,
-               outdir,
-               flank=100,
-               mapQ=20,
-               uncover=20):
-    """Parallel run bamdst 3 times(sorted bam raw bed, sorted bam extend bed, rmdup bam raw bed)
-
-    Arguments:
-        bamdstpath {[string]} -- [path to bamdst]
-        sortbam {[string]} -- [path to sorted bam]
-        rmdupbam {[string]} -- [path to rndup bam]
-        bed {[string]} -- [path to bed file]
-        outdir {[string]} -- [path to temp dir]
-
-    Keyword Arguments:
-        flank {int} -- [base pair extend for bed file] (default: {100})
-        mapQ {int} -- [description] (default: {20})
-        uncover {int} -- [description] (default: {20})
-    """
-
-    rawdir = outdir + "/sort"
-    flankdir = outdir + "/flank"
-    rmdupdir = outdir + "/rmdup"
-    flankbed = flankdir + "/flank.bed"
-    makedir(rawdir, flankdir, rmdupdir)
-    slopbed(bed, flank, flankbed)
-
-    threads = []
-    raw_process = threading.Thread(
-        target=bamdst_subprocess,
-        args=(
-            bamdstpath,
-            sortbam,
-            bed,
-            rawdir,
-            mapQ,
-            uncover,
-        ))
-    flank_process = threading.Thread(
-        target=bamdst_subprocess,
-        args=(
-            bamdstpath,
-            sortbam,
-            flankbed,
-            flankdir,
-            mapQ,
-            uncover,
-        ))
-    rmdup_process = threading.Thread(
-        target=bamdst_subprocess,
-        args=(
-            bamdstpath,
-            rmdupbam,
-            bed,
-            rmdupdir,
-            mapQ,
-            uncover,
-        ))
-    threads = [rmdup_process, raw_process, flank_process]
-    startlog = [
-        "Rmdup bam raw bed Start", "Sort bam raw bed bamdst Start",
-        "Sort bam flank bed Start"
-    ]
-    finishlog = [
-        "Rmdup bam raw bed Finished", "Sort bam raw bed Finished",
-        "Sort bam flank bed Finished"
-    ]
-    for i in range(len(threads)):
-        threads[i].setDaemon(True)
-        threads[i].start()
-        print ctime(), startlog[i]
-
-    for i in range(len(threads)):
-        threads[i].join()
-        print ctime(), finishlog[i]
-
-
 def coverage2dict(coverage_report):
     """bamdst coverage.report file to dict.
 
     Arguments:
-        coverage_report {[string]} -- [bamdst coverage.report file.]
+        coverage_report {[str]} -- [bamdst coverage.report file.]
 
     Returns:
         [dict] -- [dict of coverage.report infos]
@@ -159,7 +82,7 @@ def nxcoverage(depth_distribution, *ndepth):
     """Calculate coverage when depth >=N and median depth.
 
     Arguments:
-        depth_distribution {string} -- [bamdst output depth_distribution.plot file]
+        depth_distribution {str} -- [bamdst output depth_distribution.plot file]
 
     Returns:
         [tuple] -- [median depth and NXdepthCoverage list]
@@ -186,7 +109,7 @@ def insert_size(insertsize_plot):
     """Calculate median insert size
 
     Arguments:
-        insertsize_plot {[string]} -- [bamdst insertsize.plot output file ]
+        insertsize_plot {[str]} -- [bamdst insertsize.plot output file ]
 
     Returns:
         [int] -- [median insert size]
@@ -206,19 +129,60 @@ def insert_size(insertsize_plot):
     return median_insert
 
 
+def calCV(region_tsv_gz, stat="mean"):
+    """Calculate CV score
+    
+    Arguments:
+        region_tsv_gz {[str]} -- [bamdst output region.tsv.gz]
+    
+    Keyword Arguments:
+        stat {str} -- [region depth stat method[median or mean]] (default: {"mean"})
+    
+    Returns:
+        [float] -- [cv score]
+    """
+
+    mean_depth_lis = []
+    median_depth_lis = []
+    with gzip.open(region_tsv_gz) as fin:
+        for i in fin:
+            if i.startswith("#"):
+                continue
+            i = i.rstrip()
+            t = i.split()
+            mean_depth_lis.append(float(t[3]))
+            median_depth_lis.append(float(t[4]))
+    depthlis = []
+    if stat == "mean":
+        depthlis = mean_depth_lis
+    elif stat == "median":
+        depthlis = median_depth_lis
+    else:
+        sys.stderr.write("stat [mean or median]")
+    first_quartile = numpy.percentile(depthlis, 25)
+    third_quartile = numpy.percentile(depthlis, 75)
+    iqr = third_quartile - first_quartile
+    median_depth = numpy.median(depthlis)
+    if median_depth == 0:
+        iqr_median_cv = 999
+    else:
+        iqr_median_cv = iqr * 1.0 / median_depth
+    return iqr_median_cv
+
+
 def bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
-                     insertsize_sort, coverage_rmdup, depth_distribution_rmdup,
-                     coverage_flank):
+                     insertsize_sort, region_sort, coverage_rmdup,
+                     depth_distribution_rmdup, coverage_flank):
     """Integrate bamdst output(sort bam raw bed / sort bam flank bed / rmdup bam raw bed)
 
     Arguments:
-        sampleid {[string]} -- [sample id]
-        coverage_sort {[string]} -- [path to sort coverage.report]
-        depth_distribution_sort {[string]} -- [path to sort depth_distribution.plot]
-        insertsize_sort {[string]} -- [path to sort insertsize.plot]
-        coverage_rmdup {[string]} -- [path to rmdup coverage.report]
-        depth_distribution_rmdup {[string]} -- [path to rmdup depth_distribution.plot]
-        coverage_flank {[string]} -- [path to flank coverage.report]
+        sampleid {[str]} -- [sample id]
+        coverage_sort {[str]} -- [path to sort coverage.report]
+        depth_distribution_sort {[str]} -- [path to sort depth_distribution.plot]
+        insertsize_sort {[str]} -- [path to sort insertsize.plot]
+        coverage_rmdup {[str]} -- [path to rmdup coverage.report]
+        depth_distribution_rmdup {[str]} -- [path to rmdup depth_distribution.plot]
+        coverage_flank {[str]} -- [path to flank coverage.report]
 
     Returns:
         [dict] -- [sample infos]
@@ -283,7 +247,144 @@ def bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
         "[Target] Fraction of Target Data in all data"]
     dic["ON_TARGET_READS_EXT(%)"] = dic_flank[
         "[Target] Fraction of Target Reads in all reads"]
+    dic["CV_SCORE"] = calCV(region_sort, stat="mean")
     return dic
+
+
+def bamdst_run(bamdstpath,
+               sortbam,
+               rmdupbam,
+               bed,
+               outdir,
+               flank=100,
+               mapQ=20,
+               uncover=20):
+    """Parallel run bamdst 3 times(sorted bam raw bed, sorted bam extend bed, rmdup bam raw bed)
+
+    Arguments:
+        bamdstpath {[str]} -- [path to bamdst]
+        sortbam {[str]} -- [path to sorted bam]
+        rmdupbam {[str]} -- [path to rndup bam]
+        bed {[str]} -- [path to bed file]
+        outdir {[str]} -- [path to temp dir]
+
+    Keyword Arguments:
+        flank {int} -- [base pair extend for bed file] (default: {100})
+        mapQ {int} -- [description] (default: {20})
+        uncover {int} -- [description] (default: {20})
+    """
+
+    rawdir = outdir + "/sort"
+    flankdir = outdir + "/flank"
+    rmdupdir = outdir + "/rmdup"
+    flankbed = flankdir + "/flank.bed"
+    makedir(rawdir, flankdir, rmdupdir)
+    slopbed(bed, flank, flankbed)
+
+    threads = []
+    raw_process = threading.Thread(
+        target=bamdst_subprocess,
+        args=(
+            bamdstpath,
+            sortbam,
+            bed,
+            rawdir,
+            mapQ,
+            uncover,
+        ))
+    flank_process = threading.Thread(
+        target=bamdst_subprocess,
+        args=(
+            bamdstpath,
+            sortbam,
+            flankbed,
+            flankdir,
+            mapQ,
+            uncover,
+        ))
+    rmdup_process = threading.Thread(
+        target=bamdst_subprocess,
+        args=(
+            bamdstpath,
+            rmdupbam,
+            bed,
+            rmdupdir,
+            mapQ,
+            uncover,
+        ))
+    threads = [rmdup_process, raw_process, flank_process]
+    startlog = [
+        "Rmdup bam raw bed Start", "Sort bam raw bed bamdst Start",
+        "Sort bam flank bed Start"
+    ]
+    finishlog = [
+        "Rmdup bam raw bed Finished", "Sort bam raw bed Finished",
+        "Sort bam flank bed Finished"
+    ]
+    for i in range(len(threads)):
+        threads[i].setDaemon(True)
+        threads[i].start()
+        print ctime(), startlog[i]
+
+    for i in range(len(threads)):
+        threads[i].join()
+        print ctime(), finishlog[i]
+
+    sampleid = sortbam.split("/")[-1].split(".")[0]
+    coverage_sort = outdir + "/sort/coverage.report"
+    depth_distribution_sort = outdir + "/sort/depth_distribution.plot"
+    insertsize_sort = outdir + "/sort/insertsize.plot"
+    region_sort = outdir + "/sort/region.tsv.gz"
+    coverage_rmdup = outdir + "/rmdup/coverage.report"
+    depth_distribution_rmdup = outdir + "/rmdup/depth_distribution.plot"
+    coverage_flank = outdir + "/flank/coverage.report"
+    dic = bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
+                           insertsize_sort, region_sort, coverage_rmdup,
+                           depth_distribution_rmdup, coverage_flank)
+
+    return dic
+
+
+def parseargs():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-s", "--sortedbam", help="sorted bam file", required=True)
+    parser.add_argument(
+        "-r", "--rmdupbam", help="rmdup bam file", required=True)
+    parser.add_argument("-b", "--bed", help="target bed file", required=True)
+    parser.add_argument(
+        "-d",
+        "--bamdst",
+        help="path to bamdst software [/GPFS01/softwares/bamdst/bamdst]",
+        default="/GPFS01/softwares/bamdst/bamdst")
+    parser.add_argument(
+        "-t", "--tempdir", help="path to bamdst output dir [./]", default="./")
+    parser.add_argument(
+        "-o", "--output", help="output file name [stdout]", default=sys.stdout)
+    parser.add_argument(
+        "-f",
+        "--flank",
+        help="base pairs in each direction [100]",
+        default=100)
+    parser.add_argument(
+        "-m",
+        "--mapq",
+        help=
+        "map quality cutoff value, greater or equal to the value will be count [20]",
+        default=20)
+    parser.add_argument(
+        "-u",
+        "--uncover",
+        help="region will included in uncover file if below it [20]",
+        default=20)
+    parser.add_argument(
+        "-n",
+        "--noheader",
+        action="store_true",
+        help="print no header [False]")
+    parser.add_argument(
+        "-p", "--sep", help="delimiter, default:,", default=",")
+    return parser.parse_args()
 
 
 def headerlis():
@@ -299,100 +400,30 @@ def headerlis():
         "20X_COVERAGE_DEDUP(%)", "50X_COVERAGE_DEDUP(%)",
         "100X_COVERAGE_DEDUP(%)", "200X_COVERAGE_DEDUP(%)",
         "500X_COVERAGE_DEDUP(%)", "10%MEAN_COVERAGE_DEDUP(%)",
-        "20%MEAN_COVERAGE_DEDUP(%)", "50%MEAN_COVERAGE_DEDUP(%)"
+        "20%MEAN_COVERAGE_DEDUP(%)", "50%MEAN_COVERAGE_DEDUP(%)", "CV_SCORE"
     ]
 
 
-def run(bamdstpath,
-        sortbam,
-        rmdupbam,
-        bed,
-        outdir,
-        flank=100,
-        mapQ=20,
-        uncover=20,
-        noheader=False,
-        sep=","):
-
-    bamdst_run(
-        bamdstpath,
-        sortbam,
-        rmdupbam,
-        bed,
-        outdir,
-        flank=flank,
-        mapQ=mapQ,
-        uncover=uncover)
-
-    sampleid = sortbam.split("/")[-1].split(".")[0]
-    coverage_sort = outdir + "/sort/coverage.report"
-    depth_distribution_sort = outdir + "/sort/depth_distribution.plot"
-    insertsize_sort = outdir + "/sort/insertsize.plot"
-    coverage_rmdup = outdir + "/rmdup/coverage.report"
-    depth_distribution_rmdup = outdir + "/rmdup/depth_distribution.plot"
-    coverage_flank = outdir + "/flank/coverage.report"
-    dic = bamdst_integrate(sampleid, coverage_sort, depth_distribution_sort,
-                           insertsize_sort, coverage_rmdup,
-                           depth_distribution_rmdup, coverage_flank)
-    head = headerlis()
+def write_infos(dic, output=sys.stdout, noheader=False, sep=","):
     if sep == 't':
         sep = '\t'
-
-    if not noheader:
-        print sep.join(head)
-    lis = []
-    for h in head:
-        lis.append(dic[h])
-    print sep.join(map(str, lis))
-
-
-def parseargs():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-s", "--sortedbam", help="sorted bam file", required=True)
-    parser.add_argument(
-        "-r", "--rmdupbam", help="rmdup bam file", required=True)
-    parser.add_argument("-b", "--bed", help="target bed file", required=True)
-    parser.add_argument(
-        "-d",
-        "--bamdst",
-        help="path to bamdst software. default:/GPFS01/softwares/bamdst/bamdst",
-        default="/GPFS01/softwares/bamdst/bamdst")
-    parser.add_argument(
-        "-o",
-        "--tempdir",
-        help="path to bamdst output dir. default=./",
-        default="./")
-    parser.add_argument(
-        "-f",
-        "--flank",
-        help="base pairs in each direction. default:100",
-        default=100)
-    parser.add_argument(
-        "-m",
-        "--mapq",
-        help=
-        "map quality cutoff value, greater or equal to the value will be count. default:20",
-        default=20)
-    parser.add_argument(
-        "-u",
-        "--uncover",
-        help="region will included in uncover file if below it. default:20",
-        default=20)
-    parser.add_argument(
-        "-n",
-        "--noheader",
-        action="store_true",
-        help="print header or not, default:with header")
-    parser.add_argument(
-        "-p", "--sep", help="delimiter, default:,", default=",")
-    return parser.parse_args()
+    with open(output, "w") as w:
+        if not noheader:
+            w.write(sep.join(headerlis()) + "\n")
+        lis = []
+        for h in headerlis():
+            lis.append(dic[h])
+        w.write(sep.join(map(str, lis)) + "\n")
 
 
-if __name__ == '__main__':
-    import sys
+def main():
     if len(sys.argv) == 1:
         sys.argv.append("-h")
     args = parseargs()
-    run(args.bamdst, args.sortedbam, args.rmdupbam, args.bed, args.tempdir,
-        args.flank, args.mapq, args.uncover, args.noheader, args.sep)
+    dic = bamdst_run(args.bamdst, args.sortedbam, args.rmdupbam, args.bed,
+                     args.tempdir, args.flank, args.mapq, args.uncover)
+    write_infos(dic, args.output, args.noheader, args.sep)
+
+
+if __name__ == '__main__':
+    main()
