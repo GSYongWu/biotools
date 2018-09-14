@@ -61,6 +61,13 @@ dic = bamdst_parse.bamdst_run("path/to/bamdst", "path/to/sorted.bam",
                              "path/to/rmdup.bam", "path/to/bedfile")
 ```
 
+### Run time test
+
+- 200X (target, bed file 1MB): ~8 s
+- 1000X (target, bed file 1MB): ~30 s
+- 150X （WES, bed file 40MB): ~3 min
+- 30X (WGS): broken, can not use for WGS.
+
 ### Output
 
 | Title                     | Description                             |
@@ -100,3 +107,11 @@ dic = bamdst_parse.bamdst_run("path/to/bamdst", "path/to/sorted.bam",
 | 20%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*20% |
 | 50%MEAN_COVERAGE_DEDUP(%) | Dedup coverage >=(Mean dedup depth)*50% |
 | CV_SCORE                  | CV score of iqr median region depth     |
+
+## Known bugs
+
+For a large region, like whole genome region, bamdst may go crash with a segmental fault. I have noticed issues like this, and this bug can be tolerated by split a large region into several small pieces. However, this bug may not be fixed until next major update.
+
+## Bug report
+
+report bug to yong.wu@geneseeq.com
