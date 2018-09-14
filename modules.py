@@ -3,8 +3,37 @@ import json
 import os
 import re
 import sys
-
+import ConfigParser
 import numpy as np
+import subprocess
+
+
+def checkFile(fileToCheck):
+    if os.path.isfile(fileToCheck):
+        return True
+    else:
+        return False
+
+
+def readconfig(inifile):
+    config = ConfigParser.ConfigParser()
+    config.read(inifile)
+    return config
+
+
+class MyParser(ConfigParser.ConfigParser):
+    def as_dict(self):
+        d = dict(self._sections)
+        for k in d:
+            d[k] = dict(d[k])
+        return d
+
+
+def ini2dict(inifile):
+    cfg = MyParser()
+    cfg.read(inifile)
+    cfg.read(cfg.get("common", "config"))
+    return cfg.as_dict()
 
 
 def str2float(s):
@@ -81,6 +110,15 @@ def csv2nparray(csvfile):
     return np.array(lis)
 
 
+def cross_link(bam, rootpath, samtools, outfile):
+    cmd = "python {rootpath}/crosslink.py {bam} "\
+        "{samtools} {outfile} >/dev/null 2>&1".format(rootpath=rootpath, bam=bam, samtools=samtools, outfile=outfile )
+    subprocess.Popen(cmd, shell=True)
+    dic = {}
+    dic["CROSSLINK"] = csv2nparray(outfile)[:, 2]
+    return dic
+
+
 # Raw fastq infos
 def combineFastqInfos(infoarray):
     """Combine Raw Fastq Infos
@@ -94,11 +132,11 @@ def combineFastqInfos(infoarray):
 
     dic = {}
     dic["PF_READS"] = round(np.sum(infoarray[:, 1].astype(np.float64)) / 2, 2)
-    dic["LENGTH"] =  round(np.average(infoarray[:, 2].astype(np.float64)), 2)
-    dic["PF_BASES"] =  round(np.sum(infoarray[:, 3].astype(np.float64)), 2)
-    dic["GC(%)"] =  round(np.average(infoarray[:, 4].astype(np.float64)), 2)
-    dic["Q20(%)"] =  round(np.average(infoarray[:, 5].astype(np.float64)), 2)
-    dic["Q30(%)"] =  round(np.average(infoarray[:, 6].astype(np.float64)), 2)
+    dic["LENGTH"] = round(np.average(infoarray[:, 2].astype(np.float64)), 2)
+    dic["PF_BASES"] = round(np.sum(infoarray[:, 3].astype(np.float64)), 2)
+    dic["GC(%)"] = round(np.average(infoarray[:, 4].astype(np.float64)), 2)
+    dic["Q20(%)"] = round(np.average(infoarray[:, 5].astype(np.float64)), 2)
+    dic["Q30(%)"] = round(np.average(infoarray[:, 6].astype(np.float64)), 2)
     return dic
 
 

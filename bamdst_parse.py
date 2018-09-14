@@ -11,7 +11,7 @@ import numpy
 
 from pybedtools import BedTool
 
- 
+
 def makedir(*dirs):
     for path in dirs:
         if not os.path.exists(path):
@@ -22,18 +22,25 @@ def str2pctstr(floatstr):
     return str(round(float(floatstr) * 100, 2)) + "%"
 
 
-def slopbed(bedfile, flank, outfile):
-    """Extend bed file.
+# def slopbed(bedfile, flank, outfile):
+#     """Extend bed file.
 
-    Arguments:
-        bedfile {[str]} -- [raw bed file]
-        flank {[int]} -- [extend base pairs in each direction]
-        outfile {[str]} -- [extend bed file save as]
-    """
+#     Arguments:
+#         bedfile {[str]} -- [raw bed file]
+#         flank {[int]} -- [extend base pairs in each direction]
+#         outfile {[str]} -- [extend bed file save as]
+#     """
 
-    rawbed = BedTool(bedfile)
-    addbed = rawbed.slop(b=flank, genome="hg19").sort().merge()
-    addbed.saveas(outfile)
+#     rawbed = BedTool(bedfile)
+#     addbed = rawbed.slop(b=flank, genome="hg19").sort().merge()
+#     addbed.saveas(outfile)
+
+
+def slopbed(bedfile, flank, outfile, genome, bedtools):
+    cmd = "{bedtools} slop -i {bed} -b {flank} -g {genome} |"\
+    "bedtools sort -i - | bedtools merge -i - > {outfile}".format(bedtools=bedtools,
+     bed=bedfile, flank=flank, genome=genome, outfile=outfile)
+    subprocess.Popen(cmd, shell=True)
 
 
 def bamdst_subprocess(bamdstpath, bam, bed, outdir, mapQ=20, uncover=20):
@@ -256,6 +263,8 @@ def bamdst_run(bamdstpath,
                sortbam,
                rmdupbam,
                bed,
+               genome,
+               bedtools,
                outdir="./",
                flank=100,
                mapQ=20,
@@ -280,7 +289,7 @@ def bamdst_run(bamdstpath,
     rmdupdir = outdir + "/rmdup"
     flankbed = flankdir + "/flank.bed"
     makedir(rawdir, flankdir, rmdupdir)
-    slopbed(bed, flank, flankbed)
+    slopbed(bed, flank, flankbed, genome, bedtools)
 
     threads = []
     raw_process = threading.Thread(
@@ -359,6 +368,10 @@ def parseargs():
         help="path to bamdst software [/GPFS01/softwares/bamdst/bamdst]",
         default="/GPFS01/softwares/bamdst/bamdst")
     parser.add_argument(
+        "-bd", "--bedtools", help="path to bedtools", required=True)
+    parser.add_argument(
+        "-g", "--genome", help="path to reference fai file", required=True)
+    parser.add_argument(
         "-t", "--tempdir", help="path to bamdst output dir [./]", default="./")
     parser.add_argument(
         "-o", "--output", help="output file name [stdout]", default=sys.stdout)
@@ -426,7 +439,8 @@ def main():
         sys.argv.append("-h")
     args = parseargs()
     dic = bamdst_run(args.bamdst, args.sortedbam, args.rmdupbam, args.bed,
-                     args.tempdir, args.flank, args.mapq, args.uncover)
+                     args.genome, args.bedtools, args.tempdir, args.flank,
+                     args.mapq, args.uncover)
     write_infos(dic, args.output, args.noheader, args.sep)
 
 
