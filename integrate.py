@@ -30,6 +30,8 @@ def run_all(config, inputfastqs, sortbam, rmdupbam, bedfile ):
         pool.apply_async(bamdst_run, (cfg.get("software", "bamdst"),
         sortbam, rmdupbam, bedfile, cfg.get("params", "genome")+".fai",cfg.get("software","bedtools") )),
     )
+    pool.close()
+    pool.join()
     output = [p.get() for p in results]
     dic = {}
     for d in output:
