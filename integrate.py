@@ -24,11 +24,11 @@ def run_all(config, inputfastqs, sortbam, rmdupbam, bedfile ):
     pool = mp.Pool(processes=6)
     results = []
     results.append(
-        pool.apply_async(get_fastqinfo, args=(inputfastqs))
+        pool.apply_async(get_fastqinfo, (inputfastqs, ))
     )
     results.append(
-        pool.apply_async(bamdst_run, args=(cfg.get("software", "bamdst"),
-        sortbam, rmdupbam, bedfile, cfg.get("params", "genome")+".fai",cfg.get("software","bedtools") ))
+        pool.apply_async(bamdst_run, (cfg.get("software", "bamdst"),
+        sortbam, rmdupbam, bedfile, cfg.get("params", "genome")+".fai",cfg.get("software","bedtools") )),
     )
     output = [p.get() for p in results]
     dic = {}
